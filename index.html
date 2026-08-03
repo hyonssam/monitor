@@ -182,6 +182,7 @@
   <input type="file" id="pdfFile" accept="application/pdf" style="display:none" onchange="handlePdf(this.files[0]);this.value=''">
   <input type="file" id="planFile" accept="application/pdf" style="display:none" onchange="handlePlanPdf(this.files[0]);this.value=''">
   <input type="file" id="cutFile" accept="application/pdf" style="display:none" onchange="handleCutPdf(this.files[0]);this.value=''">
+  <button onclick="fillFixedAll()" title="분할점수 구분이 '고정'인 학기 행의 과목별·중간·기말 분할점수 빈칸에 90/80/70/60/40을 일괄 기입합니다">🔒 고정분할 90~40 기입</button>
   <button onclick="openHelp()">? 도움말</button>
   <span id="pdfStatus" style="color:#667"></span>
 </div>
@@ -601,6 +602,28 @@ function toggleRef(){
   el.style.display=hidden?'':'none';
   document.getElementById('tgR').textContent=hidden?'접기 ▾':'펼치기 ▸';
 }
+/* 고정분할 과목 일괄 기입: 과목별·중간·기말 분할점수 90/80/70/60/40 */
+function fillFixedAll(){
+  const fx=[90,80,70,60,40];
+  let rows=0,cells=0;
+  tbl.querySelectorAll('tbody.blk').forEach(tb=>{
+    ['r1','r2'].forEach(r=>{
+      const cutEl=tb.querySelector('.'+r+' [data-k="cut"]');
+      if(!cutEl||cutEl.value!=='고정')return;
+      let touched=false;
+      [['cA','cB','cC','cD','cE'],['e1A','e1B','e1C','e1D','e1E'],['e2A','e2B','e2C','e2D','e2E']].forEach(ks=>{
+        ks.forEach((k,i)=>{
+          const f=tb.querySelector('.'+r+' [data-k="'+k+'"]');
+          if(f&&f.value===''){f.value=fx[i];cells++;touched=true;}
+        });
+      });
+      if(touched)rows++;
+    });
+    calc(tb);
+  });
+  save();
+  alert(rows?('고정분할 '+rows+'개 학기 행의 빈칸 '+cells+'개에 90/80/70/60/40을 기입했습니다.'):'기입할 빈칸이 없습니다.\n(분할점수 구분이 "고정"으로 선택된 학기 행의 빈칸에만 기입됩니다)');
+}
 /* 사용 안내 패널 접기 + 도움말 */
 const GKEY='monitor2026guide::'+FILETAG;
 function toggleGuide(){
@@ -881,9 +904,18 @@ function parsePlan(pageItems){
   pageItems.forEach(items=>{
     groupLines(items).map(toTokens).forEach(tk=>{
       const joined=tk.map(w=>w.t).join(' ');
-      const m=joined.match(/(\d{4})학년도\s*([12])학기\s*\(\s*([^()]+?)\s*\)\s*교과/);
+      let m=joined.match(/(\d{4})학년도\s*([12])학기\s*\(\s*([^()]+?)\s*\)\s*교과/);
+      if(!m){ // 괄호 없는 과목명 형식: "2025학년도 2학기 2학년 사회문제탐구 교과 교수학습..."
+        const m2=joined.match(/(\d{4})학년도\s*([12])학기\s*([가-힣A-Za-z0-9ⅠⅡⅢ·ㆍ\s]{2,25}?)\s*교과\s*교수/);
+        if(m2)m=[m2[0],m2[1],m2[2],m2[3].replace(/^\d\s*학년\s*/,'')];
+      }
       if(m){cur={subject:m[3].replace(/\s+/g,''),sem:m[2],year:m[1]};subs.push(cur);return;}
       if(!cur)return;
+      // 문장형 고정/추정 표기: "본 교과는 성취수준별 고정분할점수를 사용하여..."
+      if(cur.cut===undefined){
+        const cm=joined.match(/(고정|추정)\s*분할\s*점수[를로]\s*(사용|성취도)/);
+        if(cm)cur.cut=cm[1];
+      }
       // 반영비율: 세부계획 표('구분' 포함 라인) 우선, 본문 문구는 보조
       const rp=joined.match(/지필평가\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/);
       const rh=joined.match(/수행평가\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/);
