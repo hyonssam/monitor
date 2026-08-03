@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>2026. 충청북도 고등학교 도단위 성취평가 모니터링 프로그램</title>
+<style>
+  :root{
+    --line:#c9d2dc; --head:#eef3f8; --head2:#f6f9fc;
+    --up:#c62828; --down:#1565c0; --zero:#8a939c;
+  }
+  *{box-sizing:border-box}
+  body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:24px;color:#222;font-size:13px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#667;margin:0 0 16px;font-size:12.5px}
+  .toolbar{display:flex;gap:8px;align-items:center;margin:12px 0}
+  .toolbar button{padding:7px 14px;border:1px solid #9db1c5;background:#fff;border-radius:6px;cursor:pointer;font-size:13px}
+  .toolbar button:hover{background:#eef3f8}
+  .toolbar .primary{background:#1a5da8;color:#fff;border-color:#1a5da8}
+  .toolbar .primary:hover{background:#164e8d}
+  .info{display:flex;gap:16px;margin:10px 0 14px;flex-wrap:wrap}
+  .info label{font-weight:bold;margin-right:6px}
+  .info input,.info select{padding:5px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+  table{border-collapse:collapse;min-width:3020px;width:auto}
+  th,td{border:1px solid var(--line);padding:4px;text-align:center;vertical-align:middle}
+  thead th{background:var(--head);font-weight:bold;line-height:1.3}
+  thead tr:nth-child(2) th,thead tr:nth-child(3) th{background:var(--head2)}
+  th.grp{background:#dde8f2}
+  /* 그룹 색상: 학기말(파랑) = ①정기시험(초록) + ②수행평가(노랑) */
+  col.g-final{background:#eef4fb}
+  col.g-exam{background:#eef7ee}
+  col.g-perf{background:#fdf7e6}
+  th.grp-final{background:#cfe0f3}
+  th.grp-exam{background:#d5ebd5}
+  th.grp-perf{background:#f7e9c4}
+  th .eq{font-weight:normal;font-size:11.5px;color:#456}
+  /* 좌측 고정 열: 학년·학기·과목명 */
+  .st1,.st2,.st3{position:sticky;z-index:3;background:#fff}
+  thead .st1,thead .st2,thead .st3{z-index:6}
+  .st1{left:0}
+  .st2{left:var(--stk2,57px)}
+  .st3{left:var(--stk3,146px)}
+  .st3{box-shadow:3px 0 4px -1px rgba(30,50,70,.18)}
+  tr.rd .st1,tr.rd .st3{background:#fffbe8}
+  /* 그룹 접기/펼치기 */
+  #tbl.hide-ge .ge,#tbl.hide-gp .gp,#tbl.hide-gp td.pv{display:none}
+  th.grp-exam,th.grp-perf{cursor:pointer;user-select:none}
+  th.grp-exam:hover,th.grp-perf:hover{filter:brightness(.95)}
+  .toolbar .tg.off{opacity:.55}
+  /* 과목 칩 패널 */
+  .chipbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px}
+  .chiplabel{font-size:12px;color:#556;font-weight:bold;margin-right:2px}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:14px;border:1px solid #1a5da8;background:#e8f1fa;color:#164a80;font-size:12px;cursor:pointer;user-select:none}
+  .chip:hover{background:#d8e8f7}
+  .chip.off{border-color:#b6c2cf;background:#f3f5f7;color:#98a3ad;text-decoration:line-through}
+  .chip .x{font-weight:bold;color:#b23;cursor:pointer;padding:0 1px}
+  .chip .x:hover{color:#e00}
+  .chip.add{border-style:dashed;background:#fff;color:#1a5da8;text-decoration:none}
+  tbody.blk-hidden{display:none}
+  @media print{.chipbar{display:none!important}}
+  /* PDF 드래그앤드롭 */
+  #dropHint{position:fixed;right:14px;bottom:14px;z-index:40;background:#1a5da8;color:#fff;font-size:11.5px;line-height:1.5;padding:9px 13px;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.25);opacity:.88;text-align:center;pointer-events:none}
+  #dropOverlay{position:fixed;inset:0;z-index:60;display:none;background:rgba(26,93,168,.14);pointer-events:none}
+  #dropOverlay.on{display:flex;align-items:center;justify-content:center}
+  #dropOverlay .dz{border:3px dashed #1a5da8;background:rgba(255,255,255,.94);border-radius:14px;padding:34px 54px;font-size:19px;font-weight:bold;color:#1a5da8;text-align:center}
+  #dropOverlay .dz small{font-size:12px;font-weight:normal;color:#567}
+  @media print{#dropHint,#dropOverlay{display:none!important}}
+  /* 요약 차트 */
+  .sumtitle{font-size:15px;margin:18px 0 8px}
+  .sumtitle .tg{font-size:11.5px;padding:3px 10px;border:1px solid #9db1c5;background:#fff;border-radius:5px;cursor:pointer;vertical-align:2px}
+  .sumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+  .scard{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}
+  .scard .sh{font-weight:bold;font-size:12.5px;margin-bottom:6px}
+  .srow{margin:5px 0}
+  .srow label{font-size:11px;color:#556;display:flex;justify-content:space-between;margin-bottom:2px}
+  .sd{font-weight:bold;font-size:11px}.sd.up{color:var(--up)}.sd.down{color:var(--down)}.sd.zero{color:var(--zero)}
+  .sbar{position:relative;height:12px;background:#f0f3f6;border-radius:3px;margin:2px 0;overflow:hidden}
+  .sbar span{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+  .sbar i{position:absolute;right:5px;top:0;font-size:10px;line-height:12px;font-style:normal;color:#345}
+  .sbar em{position:absolute;left:4px;top:0;font-size:9px;line-height:12px;font-style:normal;color:#789}
+  td input,td textarea{width:100%;border:1px solid #e0e6ec;border-radius:3px;padding:4px 2px;font-size:16px;text-align:center;font-family:inherit}
+  td input:focus,td textarea:focus,td select:focus{outline:2px solid #7fb2e5;border-color:#7fb2e5}
+  td select{width:100%;border:1px solid #e0e6ec;border-radius:3px;padding:4px 1px;font-size:14.5px;text-align:center;font-family:inherit;background:#fff}
+  td textarea{resize:vertical;min-height:52px;text-align:left}
+  .c-num{width:68px}.c-max{width:78px}.c-subj{width:116px}.c-note{width:150px}.c-grade{width:60px}.c-sem{width:92px}
+  .c-area{width:126px}.c-cut{width:100px}
+  td.pv{vertical-align:top;padding:2px}
+  .stack{display:flex;flex-direction:column;gap:2px}
+  .stack input{height:27px}
+  .pvbtns{margin-top:3px;display:flex;gap:3px;justify-content:center}
+  .pvb{font-size:11px;line-height:1;padding:2px 7px;border:1px solid #9db1c5;background:#fff;border-radius:4px;cursor:pointer}
+  .pvb:hover{background:#eef3f8}
+  /* 과목 블록 구분: 굵은 선 */
+  tbody.blk{border-top:3px solid #6d87a3}
+  tbody.blk tr.r1 td{border-top:3px solid #6d87a3}
+  tr.r1 td.sem{background:#f3f8ee;font-weight:bold}
+  tr.r2 td.sem{background:#eef4fb;font-weight:bold}
+  tr.rd{background:#fffbe8}
+  tr.rd td.sem{font-weight:bold;background:#fff3c2}
+  tr.rd .diff{font-weight:bold;font-size:16px}
+  .diff.up{color:var(--up)}
+  .diff.down{color:var(--down)}
+  .diff.zero{color:var(--zero)}
+  td.na{background:#f2f2f2;color:#bbb}
+  .del{margin-top:6px;font-size:11px;padding:2px 8px;border:1px solid #d9a0a0;color:#b23;background:#fff;border-radius:4px;cursor:pointer}
+  .del:hover{background:#fdeeee}
+  .legend{margin:10px 2px;color:#556;font-size:12px}
+  .legend b.u{color:var(--up)} .legend b.d{color:var(--down)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal{background:#fff;border-radius:10px;padding:20px 24px;max-width:520px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .modal h2{font-size:16px;margin:0 0 4px}
+  .modal .meta{color:#667;font-size:12px;margin:0 0 12px}
+  .modal ul{list-style:none;padding:0;margin:0 0 14px}
+  .modal li{padding:5px 4px;border-bottom:1px solid #eef1f4}
+  .modal li label{display:flex;gap:8px;align-items:center;cursor:pointer}
+  .modal li .lbl{flex:1;text-align:left}
+  .modal li .half{color:#a70;font-size:11.5px}
+  .modal .btns{display:flex;gap:8px;justify-content:flex-end}
+  .modal .btns button{padding:7px 16px;border-radius:6px;border:1px solid #9db1c5;background:#fff;cursor:pointer}
+  .modal .btns .ok{background:#1a5da8;color:#fff;border-color:#1a5da8}
+  .modal .warn{background:#fff6e0;border:1px solid #e8cd8a;border-radius:6px;padding:6px 10px;font-size:12px;margin:0 0 10px}
+  @media print{
+    body{margin:6mm;font-size:11px}
+    .toolbar,.del,.pvbtns,.legend .noprint{display:none!important}
+    .scroll{overflow:visible;border:none}
+    td input,td textarea{border:none;padding:1px}
+    @page{size:A3 landscape;margin:8mm}
+  }
+</style>
+</head>
+<body>
+
+<h1>2026. 충청북도 고등학교 도단위 성취평가 모니터링 프로그램</h1>
+<p class="sub">고등학교 공통과목 성취평가 결과 — 2025학년도 1·2학기 비교 <span style="float:right;font-size:11px;color:#99a">제작: 서전고등학교 이현진</span></p>
+
+<div class="info">
+  <span><label>학교명</label><input id="school" size="16" placeholder="○○고등학교"></span>
+  <span><label>설립구분</label>
+    <select id="stype"><option value=""></option><option>공립</option><option>사립</option><option>국립</option></select>
+  </span>
+</div>
+
+<div class="toolbar">
+  <button class="primary" onclick="document.getElementById('pdfFile').click()">📄 학교알리미 PDF 불러오기</button>
+  <button class="primary" onclick="document.getElementById('planFile').click()">📑 평가계획 PDF 불러오기</button>
+  <button class="primary" onclick="document.getElementById('cutFile').click()">✂️ 분할점수 PDF 불러오기</button>
+  <button onclick="addBlock();save()">＋ 과목 추가</button>
+  <button id="tgE" class="tg" onclick="toggleGrp('ge')">① 정기시험 접기 ▾</button>
+  <button id="tgP" class="tg" onclick="toggleGrp('gp')">② 수행평가 접기 ▾</button>
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+  <button onclick="exportXlsx()" title="표 전체를 엑셀 파일로 저장합니다 (제출·보고용)">📊 엑셀 내보내기</button>
+  <button onclick="exportJson()" title="입력 내용 전체를 백업 파일로 저장합니다. 다른 컴퓨터나 취합자에게 전달할 때 사용하세요">💾 백업 저장</button>
+  <button onclick="document.getElementById('jsonFile').click()" title="백업 파일(.json)을 열어 입력 내용을 복원합니다">📂 백업 열기</button>
+  <button onclick="if(confirm('입력 내용을 모두 지울까요?')){localStorage.removeItem(KEY);localStorage.removeItem(LEGACY3);localStorage.removeItem(OLDKEY);location.reload()}">초기화</button>
+  <input type="file" id="jsonFile" accept=".json,application/json" style="display:none" onchange="importJson(this.files[0]);this.value=''">
+  <input type="file" id="pdfFile" accept="application/pdf" style="display:none" onchange="handlePdf(this.files[0]);this.value=''">
+  <input type="file" id="planFile" accept="application/pdf" style="display:none" onchange="handlePlanPdf(this.files[0]);this.value=''">
+  <input type="file" id="cutFile" accept="application/pdf" style="display:none" onchange="handleCutPdf(this.files[0]);this.value=''">
+  <span id="pdfStatus" style="color:#667"></span>
+</div>
+
+<div id="chipBar" class="chipbar"></div>
+
+<div class="scroll">
+<table id="tbl">
+<colgroup>
+  <col><col><col><col>
+  <col span="2"><col>
+  <col span="11" class="g-final">
+  <col span="12" class="g-exam">
+  <col span="7" class="g-perf">
+  <col>
+</colgroup>
+<thead>
+  <tr>
+    <th rowspan="3" class="c-grade st1">학년</th>
+    <th rowspan="3" class="c-sem st2">학기</th>
+    <th rowspan="3" class="c-subj st3">공통과목명</th>
+    <th rowspan="3" class="c-num">수강자수</th>
+    <th colspan="2" rowspan="2">반영비율(%)</th>
+    <th rowspan="3" class="c-sem">분할점수<br>구분</th>
+    <th colspan="11" class="grp grp-final">학기말 성적처리 결과 <span class="eq">＝ ① ＋ ② 합산</span></th>
+    <th colspan="12" class="grp grp-exam ge" onclick="toggleGrp('ge')" title="클릭하면 접힙니다">① 정기시험 ▾</th>
+    <th colspan="7" class="grp grp-perf gp" onclick="toggleGrp('gp')" title="클릭하면 접힙니다">② 수행평가 ▾</th>
+    <th rowspan="3" class="c-note">비고</th>
+  </tr>
+  <tr>
+    <th rowspan="2" class="c-max">평균</th>
+    <th colspan="5">과목별 성취도별 분포비율(%)</th>
+    <th colspan="5">과목별 성취도 분할점수</th>
+    <th colspan="6" class="ge">중간고사 성취도 분할점수</th>
+    <th colspan="6" class="ge">기말고사 성취도 분할점수</th>
+    <th rowspan="2" class="c-area gp">영역명</th>
+    <th rowspan="2" class="c-num gp">영역별<br>만점</th>
+    <th colspan="5" class="gp">성취도 분할점수(영역별)</th>
+  </tr>
+  <tr>
+    <th class="c-num">정기<br>시험</th><th class="c-num">수행</th>
+    <th class="c-num">A</th><th class="c-num">B</th><th class="c-num">C</th><th class="c-num">D</th><th class="c-num">E</th>
+    <th class="c-num">A</th><th class="c-num">B</th><th class="c-num">C</th><th class="c-num">D</th><th class="c-num">E</th>
+    <th class="c-max ge">평균<br>(중간)</th><th class="c-num ge">A</th><th class="c-num ge">B</th><th class="c-num ge">C</th><th class="c-num ge">D</th><th class="c-num ge">E</th>
+    <th class="c-max ge">평균<br>(기말)</th><th class="c-num ge">A</th><th class="c-num ge">B</th><th class="c-num ge">C</th><th class="c-num ge">D</th><th class="c-num ge">E</th>
+    <th class="c-cut gp">A</th><th class="c-cut gp">B</th><th class="c-cut gp">C</th><th class="c-cut gp">D</th><th class="c-cut gp">E</th>
+  </tr>
+</thead>
+</table>
+</div>
+
+<p class="legend">※ <b style="color:#1a5da8">학기말 성적</b> ＝ <b style="color:#2e7d32">① 정기시험</b> ＋ <b style="color:#b8860b">② 수행평가</b> (반영비율 가중 합산) · <b>증감</b> 행은 2025-2학기 − 2025-1학기 값이 자동 계산됩니다. (<b class="u">▲ 증가</b> / <b class="d">▼ 감소</b> / <span style="color:var(--zero)">— 변동 없음</span>)
+<span class="noprint"> · 입력 내용은 이 브라우저에 자동 저장됩니다.</span></p>
+
+<div id="summaryWrap">
+  <h2 class="sumtitle">과목별 요약 차트 <button class="tg" id="tgS" onclick="toggleSum()">접기 ▾</button></h2>
+  <div id="summary" class="sumgrid"></div>
+</div>
+
+<div id="refWrap">
+  <h2 class="sumtitle">성취수준 A비율 — 전국 기준 대비 이탈도 <button class="tg" id="tgR" onclick="toggleRef()">접기 ▾</button></h2>
+  <p class="legend">A 기준값(%) <input id="refA" type="number" step="any" value="23.9" style="width:70px;padding:3px 6px;border:1px solid var(--line);border-radius:4px">
+  표준편차 σ(선택) <input id="refSD" type="number" step="any" placeholder="예: 8.5" style="width:70px;padding:3px 6px;border:1px solid var(--line);border-radius:4px">
+  — <span style="color:#c62828">- - 기준선</span>, σ 입력 시 <span style="color:#b8860b">□ ±1σ 상자 · │ ±2σ 수염</span>과 σ 이탈도가 함께 표시됩니다.</p>
+  <div id="refGrid" class="sumgrid"></div>
+</div>
+
+<div id="dropHint">📄 PDF를 이 화면에 끌어다 놓으면<br>자동 인식·기입됩니다</div>
+<div id="dropOverlay"><div class="dz">📄 여기에 놓으세요<br><small>학교알리미 · 평가계획 · 분할점수 산출 내역 PDF 자동 인식</small></div></div>
+
+<template id="blkTpl">
+<tbody class="blk">
+  <tr class="r1">
+    <td rowspan="3" class="st1"><input data-k="grade" placeholder="1"><button class="del" onclick="delBlock(this)">삭제</button></td>
+    <td class="sem st2">2025-1</td>
+    <td class="st3"><input data-k="subj" placeholder="공통국어1"></td>
+    <td><input type="number" step="any" data-k="n"></td>
+    <td><input type="number" step="any" data-k="wP"></td>
+    <td><input type="number" step="any" data-k="wH"></td>
+    <td><select data-k="cut"><option value=""></option><option>고정</option><option>추정</option></select></td>
+    <td><input type="number" step="any" data-k="avg"></td>
+    <td><input type="number" step="any" data-k="dA"></td><td><input type="number" step="any" data-k="dB"></td><td><input type="number" step="any" data-k="dC"></td><td><input type="number" step="any" data-k="dD"></td><td><input type="number" step="any" data-k="dE"></td>
+    <td><input type="number" step="any" data-k="cA"></td><td><input type="number" step="any" data-k="cB"></td><td><input type="number" step="any" data-k="cC"></td><td><input type="number" step="any" data-k="cD"></td><td><input type="number" step="any" data-k="cE"></td>
+    <td class="ge"><input type="number" step="any" data-k="m1"></td>
+    <td class="ge"><input type="number" step="any" data-k="e1A"></td><td class="ge"><input type="number" step="any" data-k="e1B"></td><td class="ge"><input type="number" step="any" data-k="e1C"></td><td class="ge"><input type="number" step="any" data-k="e1D"></td><td class="ge"><input type="number" step="any" data-k="e1E"></td>
+    <td class="ge"><input type="number" step="any" data-k="m2"></td>
+    <td class="ge"><input type="number" step="any" data-k="e2A"></td><td class="ge"><input type="number" step="any" data-k="e2B"></td><td class="ge"><input type="number" step="any" data-k="e2C"></td><td class="ge"><input type="number" step="any" data-k="e2D"></td><td class="ge"><input type="number" step="any" data-k="e2E"></td>
+    <td class="pv"><div class="stack"></div><div class="pvbtns"><button type="button" class="pvb" onclick="pvAdd(this)">＋</button><button type="button" class="pvb" onclick="pvDel(this)">－</button></div></td>
+    <td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td>
+    <td rowspan="3"><textarea data-k="note"></textarea></td>
+  </tr>
+  <tr class="r2">
+    <td class="sem st2">2025-2</td>
+    <td class="st3"><input data-k="subj" placeholder="공통국어2"></td>
+    <td><input type="number" step="any" data-k="n"></td>
+    <td><input type="number" step="any" data-k="wP"></td>
+    <td><input type="number" step="any" data-k="wH"></td>
+    <td><select data-k="cut"><option value=""></option><option>고정</option><option>추정</option></select></td>
+    <td><input type="number" step="any" data-k="avg"></td>
+    <td><input type="number" step="any" data-k="dA"></td><td><input type="number" step="any" data-k="dB"></td><td><input type="number" step="any" data-k="dC"></td><td><input type="number" step="any" data-k="dD"></td><td><input type="number" step="any" data-k="dE"></td>
+    <td><input type="number" step="any" data-k="cA"></td><td><input type="number" step="any" data-k="cB"></td><td><input type="number" step="any" data-k="cC"></td><td><input type="number" step="any" data-k="cD"></td><td><input type="number" step="any" data-k="cE"></td>
+    <td class="ge"><input type="number" step="any" data-k="m1"></td>
+    <td class="ge"><input type="number" step="any" data-k="e1A"></td><td class="ge"><input type="number" step="any" data-k="e1B"></td><td class="ge"><input type="number" step="any" data-k="e1C"></td><td class="ge"><input type="number" step="any" data-k="e1D"></td><td class="ge"><input type="number" step="any" data-k="e1E"></td>
+    <td class="ge"><input type="number" step="any" data-k="m2"></td>
+    <td class="ge"><input type="number" step="any" data-k="e2A"></td><td class="ge"><input type="number" step="any" data-k="e2B"></td><td class="ge"><input type="number" step="any" data-k="e2C"></td><td class="ge"><input type="number" step="any" data-k="e2D"></td><td class="ge"><input type="number" step="any" data-k="e2E"></td>
+    <td class="pv"><div class="stack"></div><div class="pvbtns"><button type="button" class="pvb" onclick="pvAdd(this)">＋</button><button type="button" class="pvb" onclick="pvDel(this)">－</button></div></td>
+    <td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td><td class="pv"><div class="stack"></div></td>
+  </tr>
+  <tr class="rd">
+    <td class="sem st2">증감</td>
+    <td class="na st3">—</td>
+    <td class="diff" data-k="n"></td>
+    <td class="diff" data-k="wP"></td><td class="diff" data-k="wH"></td>
+    <td class="na">—</td>
+    <td class="diff" data-k="avg"></td>
+    <td class="diff" data-k="dA"></td><td class="diff" data-k="dB"></td><td class="diff" data-k="dC"></td><td class="diff" data-k="dD"></td><td class="diff" data-k="dE"></td>
+    <td class="diff" data-k="cA"></td><td class="diff" data-k="cB"></td><td class="diff" data-k="cC"></td><td class="diff" data-k="cD"></td><td class="diff" data-k="cE"></td>
+    <td class="na ge">—</td>
+    <td class="na ge">—</td><td class="na ge">—</td><td class="na ge">—</td><td class="na ge">—</td><td class="na ge">—</td>
+    <td class="na ge">—</td>
+    <td class="na ge">—</td><td class="na ge">—</td><td class="na ge">—</td><td class="na ge">—</td><td class="na ge">—</td>
+    <td class="na gp" colspan="7">—</td>
+  </tr>
+</tbody>
+</template>
+
+<script>
+// 파일명별 저장소 분리: 파일을 복사·이름변경하면 각자 독립된 데이터 공간을 가짐
+const FILETAG=encodeURIComponent((location.pathname.split(/[\\/]/).pop()||'default'));
+const KEY='monitor2026v3::'+FILETAG;
+const LEGACY3='monitor2026v3';
+const OLDKEY='monitor2026v2';
+const mainFields=tb=>[...tb.querySelectorAll('[data-k]')].filter(f=>/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName));
+const tbl=document.getElementById('tbl');
+const tpl=document.getElementById('blkTpl');
+
+function addBlock(){
+  const tb=tpl.content.firstElementChild.cloneNode(true);
+  tbl.appendChild(tb);
+  return tb;
+}
+function delBlock(btn){
+  if(!confirm('이 과목 블록을 삭제할까요?'))return;
+  btn.closest('tbody.blk').remove();
+  save();
+}
+function fmt(d){return (Math.abs(d)%1===0)?d.toFixed(0):d.toFixed(2).replace(/0$/,'');}
+/* 수행평가 영역 목록 */
+function pvRow(tr,vals){
+  const stacks=[...tr.querySelectorAll('.stack')];
+  stacks.forEach((s,i)=>{
+    const inp=document.createElement('input');
+    inp.type='text';inp.className='pvi';
+    if(vals&&vals[i]!==undefined)inp.value=vals[i];
+    s.appendChild(inp);
+  });
+}
+function pvAdd(btn){pvRow(btn.closest('tr'));save();}
+function pvDel(btn){
+  const stacks=[...btn.closest('tr').querySelectorAll('.stack')];
+  stacks.forEach(s=>{if(s.lastElementChild)s.removeChild(s.lastElementChild);});
+  save();
+}
+function pvData(tb,row){
+  const stacks=[...tb.querySelectorAll('.'+row+' .stack')];
+  if(!stacks.length)return[];
+  const n=stacks[0].children.length,rows=[];
+  for(let i=0;i<n;i++)rows.push(stacks.map(s=>s.children[i]?s.children[i].value:''));
+  return rows;
+}
+function pvSet(tb,row,rows){
+  const tr=tb.querySelector('.'+row);
+  tr.querySelectorAll('.stack').forEach(s=>s.innerHTML='');
+  (rows||[]).forEach(v=>pvRow(tr,v));
+}
+function calc(tb){
+  tb.querySelectorAll('td.diff').forEach(cell=>{
+    const k=cell.dataset.k;
+    const v1=parseFloat(tb.querySelector('.r1 [data-k="'+k+'"]')?.value);
+    const v2=parseFloat(tb.querySelector('.r2 [data-k="'+k+'"]')?.value);
+    cell.classList.remove('up','down','zero');
+    cell.style.background='';
+    if(isNaN(v1)||isNaN(v2)){cell.textContent='';return;}
+    const d=Math.round((v2-v1)*100)/100;
+    const a=Math.min(Math.abs(d)/25,1)*0.32; // 증감 크기 비례 배경 강도
+    if(d>0){cell.textContent='▲ +'+fmt(d);cell.classList.add('up');cell.style.background='rgba(198,40,40,'+a.toFixed(3)+')';}
+    else if(d<0){cell.textContent='▼ −'+fmt(Math.abs(d));cell.classList.add('down');cell.style.background='rgba(21,101,192,'+a.toFixed(3)+')';}
+    else{cell.textContent='—';cell.classList.add('zero');}
+  });
+  // 분포비율 셀 미니 막대
+  ['r1','r2'].forEach(r=>{
+    ['dA','dB','dC','dD','dE'].forEach(k=>{
+      const f=tb.querySelector('.'+r+' [data-k="'+k+'"]');
+      if(!f)return;
+      const v=parseFloat(f.value);
+      f.style.background=isNaN(v)?'':'linear-gradient(to right, rgba(126,169,214,.5) '+Math.max(0,Math.min(100,v))+'%, rgba(126,169,214,0) '+Math.max(0,Math.min(100,v))+'%)';
+    });
+  });
+}
+function collectData(){
+  return {
+    school:document.getElementById('school').value,
+    stype:document.getElementById('stype').value,
+    refA:document.getElementById('refA')?.value,
+    refSD:document.getElementById('refSD')?.value,
+    blocks:[...tbl.querySelectorAll('tbody.blk')].map(tb=>({
+      main:mainFields(tb).map(i=>i.value),
+      pv1:pvData(tb,'r1'),
+      pv2:pvData(tb,'r2'),
+      hid:tb.classList.contains('blk-hidden')
+    }))
+  };
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(collectData()));}catch(e){}
+  renderSummary();renderRef();renderChips();
+}
+/* 과목 칩 패널 (피벗식 표시/숨김/삭제) */
+function renderChips(){
+  const bar=document.getElementById('chipBar');
+  if(!bar)return;
+  const chips=[];
+  tbl.querySelectorAll('tbody.blk').forEach((tb,i)=>{
+    const s1=tb.querySelector('.r1 [data-k="subj"]').value,s2=tb.querySelector('.r2 [data-k="subj"]').value;
+    const name=esc(s1||s2||'(과목 '+(i+1)+')');
+    const off=tb.classList.contains('blk-hidden');
+    chips.push('<span class="chip'+(off?' off':'')+'" data-i="'+i+'" title="클릭: 표시/숨김 전환">'+name+'<b class="x" data-i="'+i+'" title="완전 삭제">×</b></span>');
+  });
+  bar.innerHTML='<span class="chiplabel">과목 표시:</span>'+chips.join('')+
+    '<span class="chip add" data-add="1" title="새 과목 블록 추가">＋ 추가</span>';
+}
+document.getElementById('chipBar').addEventListener('click',e=>{
+  const blks=[...tbl.querySelectorAll('tbody.blk')];
+  const x=e.target.closest('.x');
+  if(x){
+    const tb=blks[+x.dataset.i];
+    if(tb&&confirm('이 과목 블록을 데이터까지 완전히 삭제할까요?\n(잠시 숨기려면 × 대신 과목명을 클릭하세요)')){tb.remove();save();}
+    return;
+  }
+  const chip=e.target.closest('.chip');
+  if(!chip)return;
+  if(chip.dataset.add){addBlock();save();return;}
+  const tb=blks[+chip.dataset.i];
+  if(tb){tb.classList.toggle('blk-hidden');save();}
+});
+/* 데이터 파일 내보내기 / 가져오기 */
+function exportJson(){
+  const data=collectData();
+  const name=(data.school||'성취평가')+'_모니터링_데이터.json';
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+/* 엑셀(.xlsx) 내보내기 */
+const XLSX_URL='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function loadXlsxLib(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX)return res();
+    const s=document.createElement('script');
+    s.src=XLSX_URL;
+    s.onload=res;
+    s.onerror=()=>rej(new Error('엑셀 라이브러리 로드 실패 — 인터넷 연결을 확인하세요.'));
+    document.head.appendChild(s);
+  });
+}
+function buildXlsxAoa(){
+  const gv=(tb,r,k)=>{const f=tb.querySelector('.'+r+' [data-k="'+k+'"]');return f?f.value:'';};
+  const num=v=>{const n=parseFloat(v);return isNaN(n)?'':n;};
+  const aoa=[];
+  aoa.push(['2026. 충청북도 고등학교 도단위 성취평가 모니터링 프로그램']);
+  aoa.push(['학교명',document.getElementById('school').value,'설립구분',document.getElementById('stype').value,
+    'A 기준(%)',document.getElementById('refA').value,'표준편차',document.getElementById('refSD').value]);
+  aoa.push([]);
+  aoa.push(['학년','학기','공통과목명','수강자수','반영비율 정기시험(%)','반영비율 수행(%)','분할점수 구분','평균',
+    '분포A','분포B','분포C','분포D','분포E','분할A','분할B','분할C','분할D','분할E',
+    '평균(중간)','중간A','중간B','중간C','중간D','중간E','평균(기말)','기말A','기말B','기말C','기말D','기말E',
+    '수행평가 영역(만점)','비고']);
+  const MK=['n','wP','wH','cut','avg','dA','dB','dC','dD','dE','cA','cB','cC','cD','cE',
+    'm1','e1A','e1B','e1C','e1D','e1E','m2','e2A','e2B','e2C','e2D','e2E'];
+  tbl.querySelectorAll('tbody.blk').forEach(tb=>{
+    const grade=gv(tb,'r1','grade'),note=gv(tb,'r1','note');
+    const pv=r=>pvData(tb,r).map(a=>a[0]+(a[1]?'('+a[1]+')':'')).filter(Boolean).join('; ');
+    [['r1','2025-1'],['r2','2025-2']].forEach(([r,sem])=>{
+      const row=[grade,sem,gv(tb,r,'subj')];
+      MK.forEach(k=>row.push(k==='cut'?gv(tb,r,k):num(gv(tb,r,k))));
+      row.push(pv(r),r==='r1'?note:'');
+      aoa.push(row);
+    });
+    const dif=k=>{const a=parseFloat(gv(tb,'r1',k)),b=parseFloat(gv(tb,'r2',k));
+      return (isNaN(a)||isNaN(b))?'':Math.round((b-a)*100)/100;};
+    const drow=[grade,'증감',''];
+    MK.forEach(k=>drow.push(['n','wP','wH','avg','dA','dB','dC','dD','dE','cA','cB','cC','cD','cE'].includes(k)?dif(k):''));
+    drow.push('','');
+    aoa.push(drow);
+  });
+  return aoa;
+}
+async function exportXlsx(){
+  try{
+    await loadXlsxLib();
+    const ws=XLSX.utils.aoa_to_sheet(buildXlsxAoa());
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'모니터링');
+    const name=(document.getElementById('school').value||'성취평가')+'_모니터링.xlsx';
+    XLSX.writeFile(wb,name);
+  }catch(e){alert('엑셀 내보내기 오류: '+e.message);}
+}
+function importJson(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(!data||!Array.isArray(data.blocks))throw new Error('형식이 다릅니다.');
+      if(!confirm('현재 입력 내용을 가져온 데이터로 교체할까요?'))return;
+      fillData(data);save();
+    }catch(e){alert('데이터 파일을 읽지 못했습니다: '+e.message);}
+  };
+  r.readAsText(file,'utf-8');
+}
+/* 과목별 요약 차트 */
+function esc(s){return (s||'').replace(/</g,'&lt;');}
+function sbar(tag,v,color){
+  const w=isNaN(v)?0:Math.max(0,Math.min(100,v));
+  return '<div class="sbar"><span style="width:'+w+'%;background:'+color+'"></span><em>'+tag+'</em><i>'+(isNaN(v)?'–':v)+'</i></div>';
+}
+function sdelta(v1,v2){
+  if(isNaN(v1)||isNaN(v2))return '';
+  const d=Math.round((v2-v1)*100)/100;
+  if(d>0)return '<span class="sd up">▲ +'+fmt(d)+'</span>';
+  if(d<0)return '<span class="sd down">▼ −'+fmt(Math.abs(d))+'</span>';
+  return '<span class="sd zero">—</span>';
+}
+function renderSummary(){
+  const wrap=document.getElementById('summary');
+  if(!wrap)return;
+  const cards=[];
+  tbl.querySelectorAll('tbody.blk').forEach(tb=>{
+    if(tb.classList.contains('blk-hidden'))return;
+    const gv=(r,k)=>parseFloat(tb.querySelector('.'+r+' [data-k="'+k+'"]')?.value);
+    const s1=tb.querySelector('.r1 [data-k="subj"]').value,s2=tb.querySelector('.r2 [data-k="subj"]').value;
+    const name=(s1&&s2&&s1!==s2)?s1+' → '+s2:(s1||s2);
+    if(!name)return;
+    const a1=gv('r1','avg'),a2=gv('r2','avg'),A1=gv('r1','dA'),A2=gv('r2','dA'),E1=gv('r1','dE'),E2=gv('r2','dE');
+    if([a1,a2,A1,A2].every(isNaN))return;
+    cards.push('<div class="scard"><div class="sh">'+esc(name)+'</div>'+
+      '<div class="srow"><label>평균 '+sdelta(a1,a2)+'</label>'+sbar('1학기',a1,'#a8c4e0')+sbar('2학기',a2,'#4f87c5')+'</div>'+
+      '<div class="srow"><label>A 비율(%) '+sdelta(A1,A2)+'</label>'+sbar('1학기',A1,'#b5d6b5')+sbar('2학기',A2,'#4e9a4e')+'</div>'+
+      '<div class="srow"><label>E 비율(%) '+sdelta(E1,E2)+'</label>'+sbar('1학기',E1,'#e6c3c3')+sbar('2학기',E2,'#c96a6a')+'</div>'+
+      '</div>');
+  });
+  wrap.innerHTML=cards.length?cards.join(''):'<p style="color:#99a;font-size:12px">데이터를 입력하면 과목별 평균·A/E 비율 비교 차트가 표시됩니다.</p>';
+}
+/* A비율 전국 기준 대비 이탈도 그래프 */
+function refCardHTML(name,v1,v2,ref,sd){
+  const W=260,H=134,x0=26,x1=252,y0=8,y1=104;
+  let maxV=50;
+  v1.concat(v2).forEach(v=>{if(!isNaN(v))maxV=Math.max(maxV,v);});
+  if(!isNaN(ref))maxV=Math.max(maxV,ref+((!isNaN(sd)&&sd>0)?2*sd:0));
+  maxV=Math.ceil(maxV/10)*10;
+  const Y=v=>y1-(Math.max(0,v)/maxV)*(y1-y0);
+  const gw=(x1-x0)/5;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">';
+  for(let g=0;g<=maxV;g+=25){
+    s+='<line x1="'+x0+'" y1="'+Y(g)+'" x2="'+x1+'" y2="'+Y(g)+'" stroke="#e5eaef"/>'
+      +'<text x="'+(x0-3)+'" y="'+(Y(g)+3)+'" font-size="8" fill="#8a97a5" text-anchor="end">'+g+'</text>';
+  }
+  ['A','B','C','D','E'].forEach((L,i)=>{
+    const gx=x0+gw*i,cx=gx+gw/2;
+    const b1=v1[i],b2=v2[i];
+    if(!isNaN(b1))s+='<rect x="'+(cx-14)+'" y="'+Y(b1)+'" width="12" height="'+(y1-Y(b1)).toFixed(1)+'" fill="#a8c4e0"/>';
+    if(!isNaN(b2))s+='<rect x="'+(cx+2)+'" y="'+Y(b2)+'" width="12" height="'+(y1-Y(b2)).toFixed(1)+'" fill="#4f87c5"/>';
+    s+='<text x="'+cx+'" y="'+(y1+12)+'" font-size="9" fill="#556" text-anchor="middle">'+L+'</text>';
+    if(i===0&&!isNaN(ref)){
+      if(!isNaN(sd)&&sd>0){
+        s+='<line x1="'+cx+'" y1="'+Y(ref+2*sd)+'" x2="'+cx+'" y2="'+Y(Math.max(0,ref-2*sd))+'" stroke="#d4a017" stroke-width="1.5"/>'
+          +'<line x1="'+(cx-6)+'" y1="'+Y(ref+2*sd)+'" x2="'+(cx+6)+'" y2="'+Y(ref+2*sd)+'" stroke="#d4a017" stroke-width="1.5"/>'
+          +'<line x1="'+(cx-6)+'" y1="'+Y(Math.max(0,ref-2*sd))+'" x2="'+(cx+6)+'" y2="'+Y(Math.max(0,ref-2*sd))+'" stroke="#d4a017" stroke-width="1.5"/>'
+          +'<rect x="'+(cx-16)+'" y="'+Y(ref+sd)+'" width="32" height="'+(Y(Math.max(0,ref-sd))-Y(ref+sd)).toFixed(1)+'" fill="rgba(212,160,23,.16)" stroke="#d4a017"/>';
+      }
+      s+='<line x1="'+(gx+1)+'" y1="'+Y(ref)+'" x2="'+(gx+gw-1)+'" y2="'+Y(ref)+'" stroke="#c62828" stroke-width="2" stroke-dasharray="4 2"/>';
+    }
+  });
+  s+='</svg>';
+  const bd=(tag,v)=>{
+    if(isNaN(v)||isNaN(ref))return '';
+    const d=Math.round((v-ref)*10)/10;
+    let t=tag+' A비율 '+v+'% · 기준 대비 '+(d>=0?'▲ +':'▼ −')+Math.abs(d)+'%p';
+    if(!isNaN(sd)&&sd>0)t+=' ('+(d>=0?'+':'−')+(Math.abs(d)/sd).toFixed(1)+'σ)';
+    return '<span class="sd '+(d>0?'up':(d<0?'down':'zero'))+'" style="display:block;margin-top:2px">'+t+'</span>';
+  };
+  return '<div class="scard"><div class="sh">'+esc(name)+'</div>'+s+bd('1학기',v1[0])+bd('2학기',v2[0])+'</div>';
+}
+function renderRef(){
+  const grid=document.getElementById('refGrid');
+  if(!grid)return;
+  const ref=parseFloat(document.getElementById('refA').value);
+  const sd=parseFloat(document.getElementById('refSD').value);
+  const cards=[];
+  tbl.querySelectorAll('tbody.blk').forEach(tb=>{
+    if(tb.classList.contains('blk-hidden'))return;
+    const gv=(r,k)=>parseFloat(tb.querySelector('.'+r+' [data-k="'+k+'"]')?.value);
+    const s1=tb.querySelector('.r1 [data-k="subj"]').value,s2=tb.querySelector('.r2 [data-k="subj"]').value;
+    const name=(s1&&s2&&s1!==s2)?s1+' → '+s2:(s1||s2);
+    if(!name)return;
+    const ks=['dA','dB','dC','dD','dE'];
+    const v1=ks.map(k=>gv('r1',k)),v2=ks.map(k=>gv('r2',k));
+    if(v1.every(isNaN)&&v2.every(isNaN))return;
+    cards.push(refCardHTML(name,v1,v2,ref,sd));
+  });
+  grid.innerHTML=cards.length?cards.join(''):'<p style="color:#99a;font-size:12px">분포비율 데이터가 있으면 과목별 그래프가 표시됩니다.</p>';
+}
+function toggleRef(){
+  const el=document.getElementById('refGrid');
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'':'none';
+  document.getElementById('tgR').textContent=hidden?'접기 ▾':'펼치기 ▸';
+}
+function toggleSum(){
+  const el=document.getElementById('summary');
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'':'none';
+  document.getElementById('tgS').textContent=hidden?'접기 ▾':'펼치기 ▸';
+}
+function fillData(data){
+  [...tbl.querySelectorAll('tbody.blk')].forEach(tb=>tb.remove());
+  document.getElementById('school').value=data.school||'';
+  document.getElementById('stype').value=data.stype||'';
+  if(data.refA!==undefined&&data.refA!=='')document.getElementById('refA').value=data.refA;
+  if(data.refSD!==undefined)document.getElementById('refSD').value=data.refSD||'';
+  (data.blocks||[]).forEach(b=>{
+    const tb=addBlock();
+    const fields=mainFields(tb);
+    (b.main||[]).forEach((v,i)=>{if(fields[i])fields[i].value=v;});
+    pvSet(tb,'r1',b.pv1);pvSet(tb,'r2',b.pv2);
+    if(b.hid)tb.classList.add('blk-hidden');
+    calc(tb);
+  });
+  if(!tbl.querySelector('tbody.blk'))addBlock();
+}
+function load(){
+  let data=null;
+  for(const k of [KEY,LEGACY3]){ // 파일별 키 우선, 없으면 이전 공용 키에서 이관
+    try{const d=JSON.parse(localStorage.getItem(k));if(d&&d.blocks&&d.blocks.length){data=d;break;}}catch(e){}
+  }
+  if(!data){ // 구버전 데이터 이관
+    try{const old=JSON.parse(localStorage.getItem(OLDKEY));
+      if(old)data={school:old.school,stype:old.stype,blocks:(old.blocks||[]).map(v=>({main:v,pv1:[],pv2:[]}))};
+    }catch(e){}
+  }
+  if(!data||!data.blocks||!data.blocks.length){addBlock();return;}
+  fillData(data);
+}
+document.addEventListener('input',e=>{
+  const tb=e.target.closest('tbody.blk');
+  if(tb)calc(tb);
+  save();
+});
+load();
+/* 좌측 고정 열 오프셋: 실제 렌더 폭 기준 계산 */
+function setSticky(){
+  const ths=tbl.querySelectorAll('thead tr:first-child th');
+  if(ths.length<3)return;
+  const w1=ths[0].getBoundingClientRect().width;
+  const w2=ths[1].getBoundingClientRect().width;
+  document.documentElement.style.setProperty('--stk2',(w1-1)+'px');
+  document.documentElement.style.setProperty('--stk3',(w1+w2-2)+'px');
+}
+/* 그룹 접기/펼치기 (상태 저장) */
+const UIKEY='monitor2026ui::'+FILETAG;
+function renderCols(){
+  const he=tbl.classList.contains('hide-ge'),hp=tbl.classList.contains('hide-gp');
+  let html='<col><col><col><col><col span="2"><col><col span="11" class="g-final">';
+  if(!he)html+='<col span="12" class="g-exam">';
+  if(!hp)html+='<col span="7" class="g-perf">';
+  html+='<col>';
+  tbl.querySelector('colgroup').innerHTML=html;
+  // 접힌 그룹만큼 표 최소 폭 축소 → 남은 열이 늘어나지 않음
+  let mw=3020;
+  if(he)mw-=830;
+  if(hp)mw-=700;
+  tbl.style.minWidth=mw+'px';
+}
+function syncTg(){
+  const he=tbl.classList.contains('hide-ge'),hp=tbl.classList.contains('hide-gp');
+  const tE=document.getElementById('tgE'),tP=document.getElementById('tgP');
+  tE.textContent='① 정기시험 '+(he?'펼치기 ▸':'접기 ▾');tE.classList.toggle('off',he);
+  tP.textContent='② 수행평가 '+(hp?'펼치기 ▸':'접기 ▾');tP.classList.toggle('off',hp);
+}
+function toggleGrp(g){
+  tbl.classList.toggle('hide-'+g);
+  try{localStorage.setItem(UIKEY,JSON.stringify({he:tbl.classList.contains('hide-ge'),hp:tbl.classList.contains('hide-gp')}));}catch(e){}
+  renderCols();syncTg();setSticky();
+}
+(function(){
+  let ui={};try{ui=JSON.parse(localStorage.getItem(UIKEY))||{};}catch(e){}
+  if(ui.he)tbl.classList.add('hide-ge');
+  if(ui.hp)tbl.classList.add('hide-gp');
+  renderCols();syncTg();renderSummary();renderRef();renderChips();
+})();
+setSticky();
+window.addEventListener('resize',setSticky);
+setTimeout(setSticky,300);
+
+/* ===================== 학교알리미 PDF 자동 추출 ===================== */
+const PDFJS_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+function loadPdfJs(){
+  return new Promise((res,rej)=>{
+    if(window.pdfjsLib)return res();
+    const s=document.createElement('script');
+    s.src=PDFJS_URL;
+    s.onload=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;res();};
+    s.onerror=()=>rej(new Error('pdf.js 로드 실패 — 인터넷 연결을 확인하세요.'));
+    document.head.appendChild(s);
+  });
+}
+
+// ---- 파서 코어 (좌표 기반) ----
+function groupLines(items){
+  const lines=[];
+  items.forEach(it=>{
+    if(it.str===undefined||it.str===null||it.str==='')return;
+    let L=lines.find(l=>Math.abs(l.y-it.y)<3.5);
+    if(!L){L={y:it.y,items:[]};lines.push(L);}
+    L.items.push(it);
+  });
+  lines.sort((a,b)=>b.y-a.y);
+  lines.forEach(l=>l.items.sort((a,b)=>a.x-b.x));
+  return lines;
+}
+function toTokens(line){
+  const out=[];let cur=null;
+  const flush=()=>{if(cur&&cur.t.trim()){cur.x=(cur.x0+cur.x1)/2;out.push(cur);}cur=null;};
+  line.items.forEach(it=>{
+    if(!it.str.trim()){flush();return;}
+    if(cur&&it.x-cur.x1>2.5)flush();
+    if(!cur)cur={t:'',x0:it.x,x1:it.x};
+    cur.t+=it.str;cur.x1=Math.max(cur.x1,it.x+(it.w||0));
+  });
+  flush();return out;
+}
+const NUMRE=/^\d+(\.\d+)?$/;
+function parsePage(items){
+  const lines=groupLines(items).map(toTokens);
+  const res={rows:[],grade:null,school:null,year:null};
+  let avgXs=null,letXs=null;
+  for(const tk of lines){
+    const avgs=tk.filter(w=>w.t==='평균');
+    if(avgs.length===2&&tk.length<=4)avgXs=avgs.map(w=>w.x);
+    const lets=tk.filter(w=>/^[A-E]$/.test(w.t));
+    if(lets.length===10&&tk.length===10)letXs=lets.map(w=>w.x).sort((a,b)=>a-b);
+  }
+  for(const tk of lines){
+    if(tk.length===1&&/^[1-3]학년$/.test(tk[0].t))res.grade=tk[0].t.charAt(0);
+    if(tk.length===1&&/^\d{4}학년도$/.test(tk[0].t))res.year=tk[0].t.slice(0,4);
+    const si=tk.findIndex(w=>w.t==='학교');
+    if(si>=0&&tk[si+1]&&tk[si+1].t===':'&&tk[si+2])res.school=tk[si+2].t;
+    const slash=tk.findIndex(w=>w.t==='/');
+    const par=tk.findIndex(w=>/^\(\d+\)$/.test(w.t));
+    if(slash<0||par<0||par<slash+2)continue;
+    const nums=tk.slice(par+1).filter(w=>NUMRE.test(w.t));
+    if(!nums.length)continue;
+    const subj=tk.slice(slash+2,par).map(w=>w.t).join(' ');
+    if(!subj)continue;
+    const row={subject:subj,s1:{},s2:{}};
+    if(avgXs&&letXs){
+      const cols=[{sem:'s1',k:'avg',x:avgXs[0]},
+        ...['dA','dB','dC','dD','dE'].map((k,i)=>({sem:'s1',k,x:letXs[i]})),
+        {sem:'s2',k:'avg',x:avgXs[1]},
+        ...['dA','dB','dC','dD','dE'].map((k,i)=>({sem:'s2',k,x:letXs[5+i]}))];
+      let minGap=1e9;
+      const xs=cols.map(c=>c.x).sort((a,b)=>a-b);
+      for(let i=1;i<xs.length;i++)minGap=Math.min(minGap,xs[i]-xs[i-1]);
+      const tol=minGap*0.6;
+      nums.forEach(w=>{
+        let best=null,bd=1e9;
+        cols.forEach(c=>{const d=Math.abs(c.x-w.x);if(d<bd){bd=d;best=c;}});
+        if(best&&bd<=tol)row[best.sem][best.k]=parseFloat(w.t);
+      });
+    }else{
+      const v=nums.map(w=>parseFloat(w.t));
+      if(v.length>=7){row.s1.avg=v[0];['dA','dB','dC','dD','dE'].forEach((k,i)=>{if(v[1+i]!=null)row.s1[k]=v[1+i];});
+        row.s2.avg=v[6];['dA','dB','dC','dD','dE'].forEach((k,i)=>{if(v[7+i]!=null)row.s2[k]=v[7+i];});}
+      else{const sem=/2$/.test(subj)?'s2':'s1';row[sem].avg=v[0];['dA','dB','dC','dD','dE'].forEach((k,i)=>{if(v[1+i]!=null)row[sem][k]=v[1+i];});}
+    }
+    if(Object.keys(row.s1).length||Object.keys(row.s2).length)res.rows.push(row);
+  }
+  return res;
+}
+function buildPairs(rows){
+  const used=new Set(),pairs=[];
+  rows.forEach((r,i)=>{
+    if(used.has(i))return;
+    const has1=Object.keys(r.s1).length,has2=Object.keys(r.s2).length;
+    if(has1&&has2){pairs.push({label:r.subject,subj1:r.subject,subj2:r.subject,d1:r.s1,d2:r.s2});used.add(i);return;}
+    if(/1$/.test(r.subject)&&has1){
+      const base=r.subject.slice(0,-1);
+      const j=rows.findIndex((q,qi)=>!used.has(qi)&&qi!==i&&q.subject===base+'2'&&Object.keys(q.s2).length);
+      if(j>=0){pairs.push({label:r.subject+' → '+rows[j].subject,subj1:r.subject,subj2:rows[j].subject,d1:r.s1,d2:rows[j].s2});used.add(i);used.add(j);return;}
+    }
+    pairs.push({label:r.subject,half:has1?'1학기만':'2학기만',subj1:has1?r.subject:'',subj2:has2?r.subject:'',d1:r.s1,d2:r.s2});
+    used.add(i);
+  });
+  return pairs;
+}
+
+// ---- 업로드 처리 & 선택 모달 ----
+async function handlePdf(file){
+  if(!file)return;
+  const st=document.getElementById('pdfStatus');
+  try{
+    st.textContent='PDF 분석 중…';
+    await loadPdfJs();
+    const buf=await file.arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:buf}).promise;
+    const merged={rows:[],grade:null,school:null,year:null};
+    for(let i=1;i<=doc.numPages;i++){
+      const tc=await(await doc.getPage(i)).getTextContent();
+      const p=parsePage(tc.items.map(it=>({str:it.str,x:it.transform[4],y:it.transform[5],w:it.width})));
+      merged.rows.push(...p.rows);
+      merged.grade=merged.grade||p.grade;merged.school=merged.school||p.school;merged.year=merged.year||p.year;
+    }
+    st.textContent='';
+    if(!merged.rows.length){alert('교과별 학업성취 데이터를 찾지 못했습니다.\n학교알리미 "교과별 학업성취 사항" 화면을 인쇄한 PDF인지 확인해 주세요.');return;}
+    showPicker(merged);
+  }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
+}
+function showPicker(m){
+  const pairs=buildPairs(m.rows);
+  const ov=document.createElement('div');ov.className='overlay';
+  const yearWarn=(m.year&&m.year!=='2025')?'<p class="warn">⚠ PDF의 학년도가 '+m.year+'학년도입니다. 양식은 2025-1/2025-2 기준입니다.</p>':'';
+  ov.innerHTML='<div class="modal"><h2>가져올 과목 선택</h2>'+
+    '<p class="meta">'+(m.school||'학교명 미확인')+' · '+(m.grade?m.grade+'학년':'학년 미확인')+' · '+(m.year||'?')+'학년도 · '+pairs.length+'개 항목</p>'+yearWarn+
+    '<p class="meta">자동 입력: 평균, 성취도별 분포비율(A~E) — 분할점수·정기시험·수강자수·반영비율은 공시자료에 없어 직접 입력해야 합니다.</p>'+
+    '<ul>'+pairs.map((p,i)=>'<li><label><input type="checkbox" data-i="'+i+'" '+(p.label.startsWith('공통')?'checked':'')+'><span class="lbl">'+p.label+'</span>'+(p.half?'<span class="half">'+p.half+'</span>':'')+'</label></li>').join('')+'</ul>'+
+    '<div class="btns"><button onclick="this.closest(\'.overlay\').remove()">취소</button><button class="ok">가져오기</button></div></div>';
+  ov.querySelector('.ok').onclick=()=>{
+    const sel=[...ov.querySelectorAll('input[type=checkbox]:checked')].map(c=>pairs[+c.dataset.i]);
+    if(!sel.length){alert('과목을 선택해 주세요.');return;}
+    importPairs(m,sel);ov.remove();
+  };
+  document.body.appendChild(ov);
+}
+/* ---- 평가계획 PDF (고정/추정 + 반영비율) ---- */
+function parsePlan(pageItems){
+  const subs=[];let cur=null;
+  pageItems.forEach(items=>{
+    groupLines(items).map(toTokens).forEach(tk=>{
+      const joined=tk.map(w=>w.t).join(' ');
+      const m=joined.match(/(\d{4})학년도\s*([12])학기\s*\(\s*([^()]+?)\s*\)\s*교과/);
+      if(m){cur={subject:m[3].replace(/\s+/g,''),sem:m[2],year:m[1]};subs.push(cur);return;}
+      if(!cur)return;
+      // 반영비율: 세부계획 표('구분' 포함 라인) 우선, 본문 문구는 보조
+      const rp=joined.match(/지필평가\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/);
+      const rh=joined.match(/수행평가\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/);
+      if(rp||rh){
+        const pair={wP:rp?+rp[1]:undefined,wH:rh?+rh[1]:undefined};
+        if(tk.some(w=>w.t==='구분')){
+          if(!cur.table)cur.table=pair;
+          // 수행평가 영역 추출 준비: 표에서 수행평가~계 컬럼 x범위
+          if(!cur.areas&&rh){
+            const hw=tk.find(w=>/수행평가\s*\(/.test(w.t));
+            const jp=tk.find(w=>/지필평가\s*\(/.test(w.t));
+            const gye=tk.find(w=>w.t==='계');
+            // 그룹 경계 추정: 병합셀 텍스트는 중앙정렬이므로 인접 헤더 사이 중간점 사용
+            if(hw)cur._pv={
+              x1:jp?(jp.x1+hw.x0)/2:hw.x0-15,
+              x2:gye?gye.x0-2:1e9,
+              frags:[],skip:true};
+          }
+        }
+        else if(!cur.text)cur.text=pair;
+      }else if(!cur.text){
+        const b=joined.match(/지필평가\s*(\d+(?:\.\d+)?)\s*%\s*[와과,·]?\s*수행평가\s*(\d+(?:\.\d+)?)\s*%/);
+        if(b)cur.text={wP:+b[1],wH:+b[2]};
+      }
+      // 수행평가 영역명·만점: '평가 영역' 행 조각 수집 → '배점(만점)' 행에서 확정
+      if(cur._pv&&!cur.areas){
+        if(cur._pv.skip){cur._pv.skip=false;}
+        else if(tk.some(w=>w.t.startsWith('배점'))){
+          const cols=tk.filter(w=>/^\d+(\.\d+)?점?$/.test(w.t)&&w.x>cur._pv.x1&&w.x<cur._pv.x2-6)
+            .map(w=>({x:w.x,max:parseFloat(w.t)}));
+          if(cols.length){
+            // 허용오차: 컬럼 간 최소 간격의 70% (단일 컬럼이면 60pt)
+            let tol=60;
+            if(cols.length>1){
+              let g=1e9;
+              for(let i=1;i<cols.length;i++)g=Math.min(g,cols[i].x-cols[i-1].x);
+              tol=g*0.7;
+            }
+            const names=cols.map(()=>[]);
+            cur._pv.frags.forEach(f=>{
+              let bi=-1,bd=1e9;
+              cols.forEach((c,i)=>{const d=Math.abs(c.x-f.x);if(d<bd){bd=d;bi=i;}});
+              if(bi>=0&&bd<=tol)names[bi].push(f.t);
+            });
+            cur.areas=cols.map((c,i)=>({name:names[i].join(' '),max:c.max}));
+          }
+          cur._pv=null;
+        }else{
+          tk.forEach(w=>{if(w.x>cur._pv.x1&&w.x<cur._pv.x2)cur._pv.frags.push({t:w.t,x:w.x});});
+        }
+      }
+      // 평정 방법 표: 고정/추정 컬럼 x좌표 → O 표시 매칭
+      const fx=tk.find(w=>/^고정분할/.test(w.t));
+      const ex=tk.find(w=>/^추정분할|^추정$/.test(w.t));
+      if(fx)cur._fx=fx.x;
+      if(ex)cur._ex=ex.x;
+      if(cur.cut===undefined&&cur._fx!==undefined&&cur._ex!==undefined){
+        const os=tk.filter(w=>/^[OoＯ○◯]$/.test(w.t));
+        if(os.length){
+          const tol=Math.abs(cur._ex-cur._fx)/2;
+          os.forEach(w=>{
+            if(Math.abs(w.x-cur._fx)<tol)cur.cut='고정';
+            else if(Math.abs(w.x-cur._ex)<tol)cur.cut='추정';
+          });
+        }
+      }
+    });
+  });
+  // 파일 대표 학기(다수결) 및 정리
+  const cnt={};subs.forEach(s=>cnt[s.sem]=(cnt[s.sem]||0)+1);
+  const fileSem=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||null;
+  const fin=subs.map(s=>{
+    const comp=p=>{if(!p)return p;
+      if(p.wP===undefined&&p.wH!==undefined)p.wP=Math.round((100-p.wH)*100)/100;
+      if(p.wH===undefined&&p.wP!==undefined)p.wH=Math.round((100-p.wP)*100)/100;
+      return p;};
+    const t=comp(s.table),x=comp(s.text);
+    const r=t||x||{};
+    const conflict=!!(t&&x&&(t.wP!==x.wP||t.wH!==x.wH));
+    return{subject:s.subject,sem:s.sem,year:s.year,wP:r.wP,wH:r.wH,cut:s.cut||null,areas:s.areas||[],
+      conflict,alt:conflict?x:null,semMismatch:fileSem&&s.sem!==fileSem};
+  });
+  return{subjects:fin,sem:fileSem,year:subs[0]?subs[0].year:null};
+}
+const norm=s=>(s||'').replace(/\s+/g,'');
+const baseName=s=>norm(s).replace(/[12]$/,'');
+function findTarget(subject,sem){
+  const row=sem==='1'?'r1':'r2';
+  const blks=[...tbl.querySelectorAll('tbody.blk')];
+  for(const tb of blks){const v=tb.querySelector('.'+row+' [data-k="subj"]').value;
+    if(norm(v)&&norm(v)===norm(subject))return{tb,row};}
+  for(const tb of blks){const v=tb.querySelector('.'+row+' [data-k="subj"]').value;
+    if(norm(v)&&baseName(v)===baseName(subject))return{tb,row};}
+  return null;
+}
+async function handlePlanPdf(file){
+  if(!file)return;
+  const st=document.getElementById('pdfStatus');
+  try{
+    st.textContent='평가계획 PDF 분석 중… (수백 쪽일 경우 수십 초 걸릴 수 있어요)';
+    await loadPdfJs();
+    const buf=await file.arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:buf}).promise;
+    const pageItems=[];
+    for(let i=1;i<=doc.numPages;i++){
+      const tc=await(await doc.getPage(i)).getTextContent();
+      pageItems.push(tc.items.map(it=>({str:it.str,x:it.transform[4],y:it.transform[5],w:it.width})));
+      if(i%20===0)st.textContent='평가계획 PDF 분석 중… '+i+'/'+doc.numPages+'쪽';
+    }
+    st.textContent='';
+    const m=parsePlan(pageItems);
+    if(!m.subjects.length){alert('평가계획 과목 섹션을 찾지 못했습니다.\n"(과목명)교과 교수학습 및 평가 운영계획" 형식의 PDF인지 확인해 주세요.');return;}
+    showPlanPicker(m);
+  }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
+}
+function showPlanPicker(m){
+  const ov=document.createElement('div');ov.className='overlay';
+  const items=m.subjects.map(s=>({...s,target:findTarget(s.subject,m.sem)}));
+  const yearWarn=(m.year&&m.year!=='2025')?'<p class="warn">⚠ PDF의 학년도가 '+m.year+'학년도입니다. 양식은 2025 기준입니다.</p>':'';
+  ov.innerHTML='<div class="modal"><h2>평가계획 가져오기 — 2025-'+(m.sem||'?')+'학기</h2>'+
+    '<p class="meta">'+items.length+'개 과목 · 자동 입력: 반영비율(정기시험/수행), 분할점수 구분(고정/추정), 고정분할 과목은 분할점수 90/80/70/60/40 자동 기입</p>'+yearWarn+
+    '<ul>'+items.map((s,i)=>{
+      const badges=[];
+      if(!s.target)badges.push('<span class="half">양식에 매칭 과목 없음</span>');
+      if(s.conflict)badges.push('<span class="half">⚠ 비율 불일치: 표 '+s.wP+'/'+s.wH+' ↔ 본문 '+s.alt.wP+'/'+s.alt.wH+'</span>');
+      if(s.semMismatch)badges.push('<span class="half">⚠ 학기 표기 불일치('+s.sem+'학기로 기재)</span>');
+      const desc=' — 정기시험 '+(s.wP??'?')+'% / 수행 '+(s.wH??'?')+'% / '+(s.cut||'구분 미확인')+
+        (s.areas&&s.areas.length?' · 수행 '+s.areas.length+'개 영역':'');
+      return '<li><label><input type="checkbox" data-i="'+i+'" '+(s.target?'checked':'disabled')+'><span class="lbl">'+s.subject+desc+'</span>'+badges.join('')+'</label></li>';
+    }).join('')+'</ul>'+
+    '<div class="btns"><button onclick="this.closest(\'.overlay\').remove()">취소</button><button class="ok">가져오기</button></div></div>';
+  ov.querySelector('.ok').onclick=()=>{
+    const sel=[...ov.querySelectorAll('input[type=checkbox]:checked')].map(c=>items[+c.dataset.i]);
+    if(!sel.length){alert('과목을 선택해 주세요.');return;}
+    importPlan(sel);ov.remove();
+  };
+  document.body.appendChild(ov);
+}
+function importPlan(sel){
+  sel.forEach(s=>{
+    if(!s.target)return;
+    const{tb,row}=s.target;
+    const set=(k,v)=>{const f=tb.querySelector('.'+row+' [data-k="'+k+'"]');if(f&&v!==undefined&&v!==null)f.value=v;};
+    set('wP',s.wP);set('wH',s.wH);set('cut',s.cut);
+    if(s.cut==='고정'){
+      const fx=[90,80,70,60,40];
+      ['cA','cB','cC','cD','cE'].forEach((k,i)=>set(k,fx[i]));          // 과목별 분할점수
+      ['e1A','e1B','e1C','e1D','e1E'].forEach((k,i)=>set(k,fx[i]));     // 중간고사 분할점수
+      ['e2A','e2B','e2C','e2D','e2E'].forEach((k,i)=>set(k,fx[i]));     // 기말고사 분할점수
+    }
+    if(s.areas&&s.areas.length){
+      const DEF=['90이상','80이상 90미만','70이상 80미만','60이상 70미만','60미만'];
+      pvSet(tb,row,s.areas.map(a=>[a.name,a.max,...DEF]));
+    }
+    calc(tb);
+  });
+  save();
+}
+/* ---- 추정 분할점수 산출 내역 PDF (중간·기말·최종 분할점수) ---- */
+const FRAG_BLACK=/^(과목|반영비율|구분|분|고사\/영역|성취수준추정분할점수|지필\/수행구|\[\d학년\])$/;
+function parseCut(pageItems){
+  const res={subjects:[],year:null,sem:null};
+  let grade=null,colXs=null,blk=null;
+  const finish=()=>{
+    if(!blk)return;
+    const name=blk.parts.join(' ').replace(/\(\s*\d+\s*\)/,'').replace(/\s+/g,'');
+    if(name&&(blk.final||blk.exam1||blk.exam2))
+      res.subjects.push({subject:name,grade:blk.grade,exam1:blk.exam1,exam2:blk.exam2,final:blk.final});
+    blk=null;
+  };
+  pageItems.forEach(items=>{
+    const lines=groupLines(items).map(toTokens);
+    let subjLimit=1e9;
+    lines.forEach(tk=>tk.forEach(w=>{if(/^(지필|수행)$/.test(w.t))subjLimit=Math.min(subjLimit,w.x0);}));
+    subjLimit-=2;
+    lines.forEach(tk=>{
+      const joined=tk.map(w=>w.t).join(' ');
+      if(!res.year){const m=joined.match(/(\d{4})학년도\s*([12])학기/);if(m){res.year=m[1];res.sem=m[2];}}
+      const g=tk.find(w=>/^\[\d학년\]$/.test(w.t));
+      if(g){finish();grade=g.t.charAt(1);return;}
+      const heads=tk.filter(w=>/^[A-E]\/[A-E]$|^E\/미도달$/.test(w.t));
+      if(heads.length>=4){colXs=heads.map(w=>({k:w.t==='E/미도달'?'cE':({'A/B':'cA','B/C':'cB','C/D':'cC','D/E':'cD'})[w.t],x:w.x})).filter(c=>c.k);return;}
+      if(!colXs)return;
+      let minGap=1e9;
+      const xs=colXs.map(c=>c.x).sort((a,b)=>a-b);
+      for(let i=1;i<xs.length;i++)minGap=Math.min(minGap,xs[i]-xs[i-1]);
+      const tol=minGap*0.6;
+      const vals={};let n=0;
+      tk.filter(w=>NUMRE.test(w.t)).forEach(w=>{
+        let best=null,bd=1e9;
+        colXs.forEach(c=>{const d=Math.abs(c.x-w.x);if(d<bd){bd=d;best=c;}});
+        if(best&&bd<=tol){vals[best.k]=parseFloat(w.t);n++;}
+      });
+      const isFinal=tk.some(w=>/최종/.test(w.t));
+      const isExam2=tk.some(w=>w.t.includes('2차고사'));
+      const isPerf=tk.some(w=>/^수행$/.test(w.t));
+      const isJipil=tk.some(w=>/^지필$/.test(w.t));
+      const parts=tk.filter(w=>w.x1<subjLimit&&!NUMRE.test(w.t)&&!FRAG_BLACK.test(w.t)&&!/최종|분할점수/.test(w.t)).map(w=>w.t);
+      if(parts.length||n){
+        if(!blk)blk={grade,parts:[],exam1:null,exam2:null,final:null};
+        blk.parts.push(...parts);
+        if(n){
+          if(isFinal)blk.final=vals;
+          else if(isExam2)blk.exam2=vals;
+          else if(isPerf){}
+          else if(isJipil)blk.exam1=vals;
+        }
+      }
+      if(isFinal)finish();
+    });
+  });
+  finish();
+  return res;
+}
+async function handleCutPdf(file){
+  if(!file)return;
+  const st=document.getElementById('pdfStatus');
+  try{
+    st.textContent='분할점수 PDF 분석 중…';
+    await loadPdfJs();
+    const buf=await file.arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:buf}).promise;
+    const pageItems=[];
+    for(let i=1;i<=doc.numPages;i++){
+      const tc=await(await doc.getPage(i)).getTextContent();
+      pageItems.push(tc.items.map(it=>({str:it.str,x:it.transform[4],y:it.transform[5],w:it.width})));
+    }
+    st.textContent='';
+    const m=parseCut(pageItems);
+    if(!m.subjects.length){alert('분할점수 데이터를 찾지 못했습니다.\n"추정 분할점수 산출 내역" 형식의 PDF인지 확인해 주세요.');return;}
+    showCutPicker(m);
+  }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
+}
+function showCutPicker(m){
+  const ov=document.createElement('div');ov.className='overlay';
+  const items=m.subjects.map(s=>({...s,target:findTarget(s.subject,m.sem)}));
+  const yearWarn=(m.year&&m.year!=='2025')?'<p class="warn">⚠ PDF의 학년도가 '+m.year+'학년도입니다. 양식은 2025 기준입니다.</p>':'';
+  const fmt5=o=>o?['cA','cB','cC','cD','cE'].map(k=>o[k]??'–').join('/'):'—';
+  ov.innerHTML='<div class="modal"><h2>추정 분할점수 가져오기 — 2025-'+(m.sem||'?')+'학기</h2>'+
+    '<p class="meta">'+items.length+'개 과목 · 자동 입력: 과목별 성취도 분할점수(학기말 최종), 중간고사·기말고사 분할점수(A~E)</p>'+yearWarn+
+    '<ul>'+items.map((s,i)=>{
+      const badges=[];
+      if(!s.target)badges.push('<span class="half">양식에 매칭 과목 없음</span>');
+      if(!s.exam1)badges.push('<span class="half">중간고사 없음</span>');
+      if(!s.exam2)badges.push('<span class="half">기말고사 없음</span>');
+      return '<li><label><input type="checkbox" data-i="'+i+'" '+(s.target?'checked':'disabled')+'><span class="lbl">['+(s.grade||'?')+'학년] '+s.subject+' — 최종 '+fmt5(s.final)+'</span>'+badges.join('')+'</label></li>';
+    }).join('')+'</ul>'+
+    '<div class="btns"><button onclick="this.closest(\'.overlay\').remove()">취소</button><button class="ok">가져오기</button></div></div>';
+  ov.querySelector('.ok').onclick=()=>{
+    const sel=[...ov.querySelectorAll('input[type=checkbox]:checked')].map(c=>items[+c.dataset.i]);
+    if(!sel.length){alert('과목을 선택해 주세요.');return;}
+    importCut(sel);ov.remove();
+  };
+  document.body.appendChild(ov);
+}
+function importCut(sel){
+  sel.forEach(s=>{
+    if(!s.target)return;
+    const{tb,row}=s.target;
+    const set=(k,v)=>{const f=tb.querySelector('.'+row+' [data-k="'+k+'"]');if(f&&v!==undefined&&v!==null)f.value=v;};
+    if(s.final)['cA','cB','cC','cD','cE'].forEach(k=>set(k,s.final[k]));
+    if(s.exam1)['cA','cB','cC','cD','cE'].forEach((k,i)=>set(['e1A','e1B','e1C','e1D','e1E'][i],s.exam1[k]));
+    if(s.exam2)['cA','cB','cC','cD','cE'].forEach((k,i)=>set(['e2A','e2B','e2C','e2D','e2E'][i],s.exam2[k]));
+    calc(tb);
+  });
+  save();
+}
+/* ---- PDF 드래그앤드롭: 종류 자동 판별 ---- */
+async function pdfPages(file){
+  await loadPdfJs();
+  const st=document.getElementById('pdfStatus');
+  const buf=await file.arrayBuffer();
+  const doc=await pdfjsLib.getDocument({data:buf}).promise;
+  const pages=[];
+  for(let i=1;i<=doc.numPages;i++){
+    const tc=await(await doc.getPage(i)).getTextContent();
+    pages.push(tc.items.map(it=>({str:it.str,x:it.transform[4],y:it.transform[5],w:it.width})));
+    if(i%20===0)st.textContent='PDF 분석 중… '+i+'/'+doc.numPages+'쪽';
+  }
+  return pages;
+}
+async function routePdf(file){
+  const st=document.getElementById('pdfStatus');
+  try{
+    st.textContent='"'+file.name+'" 분석 중…';
+    const pages=await pdfPages(file);
+    st.textContent='';
+    // 1) 학교알리미 공시자료
+    const al={rows:[],grade:null,school:null,year:null};
+    pages.forEach(items=>{const p=parsePage(items);al.rows.push(...p.rows);
+      al.grade=al.grade||p.grade;al.school=al.school||p.school;al.year=al.year||p.year;});
+    if(al.rows.length){showPicker(al);return;}
+    // 2) 추정 분할점수 산출 내역
+    const cut=parseCut(pages);
+    if(cut.subjects.length){showCutPicker(cut);return;}
+    // 3) 평가계획
+    const plan=parsePlan(pages);
+    if(plan.subjects.length){showPlanPicker(plan);return;}
+    alert('"'+file.name+'"의 형식을 인식하지 못했습니다.\n지원: 학교알리미 공시자료 / 교과 평가계획 / 추정 분할점수 산출 내역 PDF');
+  }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
+}
+function waitOverlayClosed(){
+  return new Promise(res=>{
+    const t=setInterval(()=>{if(!document.querySelector('.overlay')){clearInterval(t);res();}},300);
+  });
+}
+(function(){
+  const ov=document.getElementById('dropOverlay');
+  let depth=0;
+  window.addEventListener('dragenter',e=>{e.preventDefault();depth++;ov.classList.add('on');});
+  window.addEventListener('dragover',e=>{e.preventDefault();});
+  window.addEventListener('dragleave',e=>{e.preventDefault();depth=Math.max(0,depth-1);if(!depth)ov.classList.remove('on');});
+  window.addEventListener('drop',async e=>{
+    e.preventDefault();depth=0;ov.classList.remove('on');
+    const files=[...(e.dataTransfer?.files||[])].filter(f=>/\.pdf$/i.test(f.name));
+    if(!files.length)return;
+    for(const f of files){await routePdf(f);await waitOverlayClosed();}
+  });
+})();
+function importPairs(m,sel){
+  if(m.school&&!document.getElementById('school').value)document.getElementById('school').value=m.school;
+  // 빈 기본 블록 제거
+  [...tbl.querySelectorAll('tbody.blk')].forEach(tb=>{
+    const any=[...tb.querySelectorAll('input,textarea,select')].some(i=>i.value.trim());
+    if(!any)tb.remove();
+  });
+  sel.forEach(p=>{
+    const tb=addBlock();
+    const set=(row,k,v)=>{const f=tb.querySelector('.'+row+' [data-k="'+k+'"]');if(f&&v!==undefined&&v!==null)f.value=v;};
+    set('r1','grade',m.grade||'');
+    set('r1','subj',p.subj1);set('r2','subj',p.subj2);
+    ['avg','dA','dB','dC','dD','dE'].forEach(k=>{set('r1',k,p.d1[k]);set('r2',k,p.d2[k]);});
+    calc(tb);
+  });
+  save();
+}
+</script>
+</body>
+</html>
