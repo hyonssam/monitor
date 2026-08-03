@@ -66,18 +66,18 @@
   #dropOverlay .dz small{font-size:12px;font-weight:normal;color:#567}
   @media print{#dropHint,#dropOverlay{display:none!important}}
   /* 요약 차트 */
-  .sumtitle{font-size:15px;margin:18px 0 8px}
+  .sumtitle{font-size:17px;margin:20px 0 10px}
   .sumtitle .tg{font-size:11.5px;padding:3px 10px;border:1px solid #9db1c5;background:#fff;border-radius:5px;cursor:pointer;vertical-align:2px}
-  .sumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
-  .scard{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}
-  .scard .sh{font-weight:bold;font-size:12.5px;margin-bottom:6px}
-  .srow{margin:5px 0}
-  .srow label{font-size:11px;color:#556;display:flex;justify-content:space-between;margin-bottom:2px}
-  .sd{font-weight:bold;font-size:11px}.sd.up{color:var(--up)}.sd.down{color:var(--down)}.sd.zero{color:var(--zero)}
-  .sbar{position:relative;height:12px;background:#f0f3f6;border-radius:3px;margin:2px 0;overflow:hidden}
-  .sbar span{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
-  .sbar i{position:absolute;right:5px;top:0;font-size:10px;line-height:12px;font-style:normal;color:#345}
-  .sbar em{position:absolute;left:4px;top:0;font-size:9px;line-height:12px;font-style:normal;color:#789}
+  .sumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+  .scard{border:1px solid var(--line);border-radius:8px;padding:13px 16px;background:#fff}
+  .scard .sh{font-weight:bold;font-size:16px;margin-bottom:9px}
+  .srow{margin:8px 0}
+  .srow label{font-size:13.5px;color:#556;display:flex;justify-content:space-between;margin-bottom:3px}
+  .sd{font-weight:bold;font-size:13.5px}.sd.up{color:var(--up)}.sd.down{color:var(--down)}.sd.zero{color:var(--zero)}
+  .sbar{position:relative;height:19px;background:#f0f3f6;border-radius:4px;margin:3px 0;overflow:hidden}
+  .sbar span{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+  .sbar i{position:absolute;right:7px;top:0;font-size:13px;line-height:19px;font-style:normal;color:#345}
+  .sbar em{position:absolute;left:6px;top:0;font-size:11px;line-height:19px;font-style:normal;color:#789}
   td input,td textarea{width:100%;border:1px solid #e0e6ec;border-radius:3px;padding:4px 2px;font-size:16px;text-align:center;font-family:inherit}
   td input:focus,td textarea:focus,td select:focus{outline:2px solid #7fb2e5;border-color:#7fb2e5}
   td select{width:100%;border:1px solid #e0e6ec;border-radius:3px;padding:4px 1px;font-size:14.5px;text-align:center;font-family:inherit;background:#fff}
@@ -144,7 +144,7 @@
   <button class="primary" onclick="document.getElementById('pdfFile').click()">📄 학교알리미 PDF 불러오기</button>
   <button class="primary" onclick="document.getElementById('planFile').click()">📑 평가계획 PDF 불러오기</button>
   <button class="primary" onclick="document.getElementById('cutFile').click()">✂️ 분할점수 PDF 불러오기</button>
-  <button onclick="addBlock();save()">＋ 과목 추가</button>
+  <button onclick="openAddModal()">＋ 과목 추가</button>
   <button id="tgE" class="tg" onclick="toggleGrp('ge')">① 정기시험 접기 ▾</button>
   <button id="tgP" class="tg" onclick="toggleGrp('gp')">② 수행평가 접기 ▾</button>
   <button onclick="window.print()">인쇄 / PDF 저장</button>
@@ -396,7 +396,7 @@ document.getElementById('chipBar').addEventListener('click',e=>{
   }
   const chip=e.target.closest('.chip');
   if(!chip)return;
-  if(chip.dataset.add){addBlock();save();return;}
+  if(chip.dataset.add){openAddModal();return;}
   const tb=blks[+chip.dataset.i];
   if(tb){tb.classList.toggle('blk-hidden');save();}
 });
@@ -786,6 +786,7 @@ async function handlePdf(file){
   }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
 }
 function showPicker(m){
+  cacheAl(m);
   const pairs=buildPairs(m.rows);
   const ov=document.createElement('div');ov.className='overlay';
   const yearWarn=(m.year&&m.year!=='2025')?'<p class="warn">⚠ PDF의 학년도가 '+m.year+'학년도입니다. 양식은 2025-1/2025-2 기준입니다.</p>':'';
@@ -926,6 +927,7 @@ async function handlePlanPdf(file){
   }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
 }
 function showPlanPicker(m){
+  cachePlan(m);
   const ov=document.createElement('div');ov.className='overlay';
   const items=m.subjects.map(s=>({...s,target:findTarget(s.subject,m.sem)}));
   const yearWarn=(m.year&&m.year!=='2025')?'<p class="warn">⚠ PDF의 학년도가 '+m.year+'학년도입니다. 양식은 2025 기준입니다.</p>':'';
@@ -1044,6 +1046,7 @@ async function handleCutPdf(file){
   }catch(e){st.textContent='';alert('PDF 처리 오류: '+e.message);}
 }
 function showCutPicker(m){
+  cacheCut(m);
   const ov=document.createElement('div');ov.className='overlay';
   const items=m.subjects.map(s=>({...s,target:findTarget(s.subject,m.sem)}));
   const yearWarn=(m.year&&m.year!=='2025')?'<p class="warn">⚠ PDF의 학년도가 '+m.year+'학년도입니다. 양식은 2025 기준입니다.</p>':'';
@@ -1129,6 +1132,115 @@ function waitOverlayClosed(){
     for(const f of files){await routePdf(f);await waitOverlayClosed();}
   });
 })();
+/* ---- PDF 데이터 캐시: 불러온 내용을 기억해 두고 과목 추가 시 재사용 ---- */
+const PDFKEY='monitor2026pdf::'+FILETAG;
+function pdfCache(){try{return JSON.parse(localStorage.getItem(PDFKEY))||{};}catch(e){return{};}}
+function pdfCacheSet(c){try{localStorage.setItem(PDFKEY,JSON.stringify(c));}catch(e){}}
+function cacheAl(m){
+  const c=pdfCache();
+  c.school=m.school||c.school;c.grade=m.grade||c.grade;
+  c.alPairs=buildPairs(m.rows);
+  pdfCacheSet(c);
+}
+function cachePlan(m){
+  const c=pdfCache();c.plan=c.plan||{};
+  const s=c.plan[m.sem]||(c.plan[m.sem]={});
+  m.subjects.forEach(x=>{s[norm(x.subject)]={wP:x.wP,wH:x.wH,cut:x.cut,areas:x.areas};});
+  pdfCacheSet(c);
+}
+function cacheCut(m){
+  const c=pdfCache();c.cut=c.cut||{};
+  const s=c.cut[m.sem]||(c.cut[m.sem]={});
+  m.subjects.forEach(x=>{s[norm(x.subject)]={exam1:x.exam1,exam2:x.exam2,final:x.final,grade:x.grade};});
+  pdfCacheSet(c);
+}
+function findIn(map,subj){
+  if(!map)return null;
+  if(map[subj])return map[subj];
+  const b=baseName(subj);
+  for(const k in map)if(baseName(k)===b)return map[k];
+  return null;
+}
+function applyCachesToRow(tb,row,sem){
+  const subjRaw=tb.querySelector('.'+row+' [data-k="subj"]').value;
+  if(!subjRaw)return;
+  const subj=norm(subjRaw);
+  const c=pdfCache();
+  const set=(k,v)=>{const f=tb.querySelector('.'+row+' [data-k="'+k+'"]');if(f&&v!==undefined&&v!==null&&v!=='')f.value=v;};
+  const p=findIn(c.plan&&c.plan[sem],subj);
+  if(p){
+    set('wP',p.wP);set('wH',p.wH);set('cut',p.cut);
+    if(p.cut==='고정'){
+      const fx=[90,80,70,60,40];
+      ['cA','cB','cC','cD','cE'].forEach((k,i)=>set(k,fx[i]));
+      ['e1A','e1B','e1C','e1D','e1E'].forEach((k,i)=>set(k,fx[i]));
+      ['e2A','e2B','e2C','e2D','e2E'].forEach((k,i)=>set(k,fx[i]));
+    }
+    if(p.areas&&p.areas.length){
+      const DEF=['90이상','80이상 90미만','70이상 80미만','60이상 70미만','60미만'];
+      pvSet(tb,row,p.areas.map(a=>[a.name,a.max,...DEF]));
+    }
+  }
+  const q=findIn(c.cut&&c.cut[sem],subj);
+  if(q){
+    if(q.final)['cA','cB','cC','cD','cE'].forEach(k=>set(k,q.final[k]));
+    if(q.exam1)['cA','cB','cC','cD','cE'].forEach((k,i)=>set(['e1A','e1B','e1C','e1D','e1E'][i],q.exam1[k]));
+    if(q.exam2)['cA','cB','cC','cD','cE'].forEach((k,i)=>set(['e2A','e2B','e2C','e2D','e2E'][i],q.exam2[k]));
+  }
+}
+/* 과목 추가: 기억된 PDF 데이터 목록에서 선택 */
+function openAddModal(){
+  const c=pdfCache();
+  const existing=new Set();
+  tbl.querySelectorAll('tbody.blk').forEach(tb=>{
+    ['r1','r2'].forEach(r=>{const v=norm(tb.querySelector('.'+r+' [data-k="subj"]').value);if(v)existing.add(baseName(v));});
+  });
+  const items=[];
+  (c.alPairs||[]).forEach(p=>items.push({label:p.label,subj1:p.subj1,subj2:p.subj2,d1:p.d1,d2:p.d2,src:'학교알리미'}));
+  const seen=new Set(items.map(i=>baseName(norm(i.subj1||i.subj2))));
+  ['1','2'].forEach(sem=>{
+    [[c.plan&&c.plan[sem],'평가계획'],[c.cut&&c.cut[sem],'분할점수']].forEach(([m,src])=>{
+      if(!m)return;
+      Object.keys(m).forEach(s=>{
+        const b=baseName(s);
+        if(seen.has(b))return;
+        seen.add(b);
+        items.push({label:s,subj1:sem==='1'?s:'',subj2:sem==='2'?s:'',grade:m[s].grade,src});
+      });
+    });
+  });
+  if(!items.length){
+    if(confirm('기억된 PDF 데이터가 없습니다.\nPDF를 불러오면 과목 목록에서 선택할 수 있습니다.\n\n빈 과목 블록을 추가할까요?')){addBlock();save();}
+    return;
+  }
+  const ov=document.createElement('div');ov.className='overlay';
+  ov.innerHTML='<div class="modal"><h2>과목 추가</h2>'+
+    '<p class="meta">이전에 불러온 PDF 데이터에서 분포비율·분할점수·반영비율·수행평가가 자동 기입됩니다.</p>'+
+    '<ul>'+items.map((it,i)=>{
+      const dup=existing.has(baseName(norm(it.subj1||it.subj2)));
+      return '<li><label><input type="checkbox" data-i="'+i+'" '+(dup?'disabled':'')+'><span class="lbl">'+esc(it.label)+'</span><span class="half">'+(dup?'이미 추가됨':it.src)+'</span></label></li>';
+    }).join('')+'</ul>'+
+    '<div class="btns"><button class="blank">빈 블록 추가</button><button onclick="this.closest(\'.overlay\').remove()">취소</button><button class="ok">선택 추가</button></div></div>';
+  ov.querySelector('.blank').onclick=()=>{addBlock();save();ov.remove();};
+  ov.querySelector('.ok').onclick=()=>{
+    const sel=[...ov.querySelectorAll('input:checked')].map(cb=>items[+cb.dataset.i]);
+    if(!sel.length){alert('과목을 선택하거나 [빈 블록 추가]를 누르세요.');return;}
+    const c2=pdfCache();
+    sel.forEach(it=>{
+      const tb=addBlock();
+      const set=(row,k,v)=>{const f=tb.querySelector('.'+row+' [data-k="'+k+'"]');if(f&&v!==undefined&&v!==null&&v!=='')f.value=v;};
+      set('r1','grade',it.grade||c2.grade||'');
+      set('r1','subj',it.subj1);set('r2','subj',it.subj2);
+      if(it.d1)['avg','dA','dB','dC','dD','dE'].forEach(k=>set('r1',k,it.d1[k]));
+      if(it.d2)['avg','dA','dB','dC','dD','dE'].forEach(k=>set('r2',k,it.d2[k]));
+      applyCachesToRow(tb,'r1','1');
+      applyCachesToRow(tb,'r2','2');
+      calc(tb);
+    });
+    save();ov.remove();
+  };
+  document.body.appendChild(ov);
+}
 function importPairs(m,sel){
   if(m.school&&!document.getElementById('school').value)document.getElementById('school').value=m.school;
   // 빈 기본 블록 제거
